@@ -1,0 +1,22 @@
+artifact_path: file:///C:/Users/gorke/LLM-Engineers-Handbook/mlruns/449246766916536019/models/m-ffebdf32dd0e4d2aad9e7c1805c8990e/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.8
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.5.1
+mlflow_version: 3.5.1
+model_id: m-ffebdf32dd0e4d2aad9e7c1805c8990e
+model_size_bytes: 94526
+model_uuid: m-ffebdf32dd0e4d2aad9e7c1805c8990e
+prompts: null
+run_id: 9b82192fe67344f9a33d62d6a24e24b1
+utc_time_created: '2025-10-29 12:30:21.077169'

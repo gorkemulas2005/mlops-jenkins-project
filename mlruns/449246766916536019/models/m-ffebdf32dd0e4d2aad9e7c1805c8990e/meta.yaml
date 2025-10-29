@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/gorke/LLM-Engineers-Handbook/mlruns/449246766916536019/models/m-ffebdf32dd0e4d2aad9e7c1805c8990e/artifacts
+creation_timestamp: 1761741021024
+experiment_id: '449246766916536019'
+last_updated_timestamp: 1761741043392
+model_id: m-ffebdf32dd0e4d2aad9e7c1805c8990e
+model_type: null
+name: regression_model
+source_run_id: 9b82192fe67344f9a33d62d6a24e24b1
+status: 2
+status_message: null

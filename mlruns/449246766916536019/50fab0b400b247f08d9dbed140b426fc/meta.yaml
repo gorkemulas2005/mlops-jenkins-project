@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/gorke/LLM-Engineers-Handbook/mlruns/449246766916536019/50fab0b400b247f08d9dbed140b426fc/artifacts
+end_time: 1761741047733
+entry_point_name: ''
+experiment_id: '449246766916536019'
+lifecycle_stage: active
+run_id: 50fab0b400b247f08d9dbed140b426fc
+run_name: evaluation_run
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1761741044212
+status: 3
+tags: []
+user_id: gorke
