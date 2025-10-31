@@ -32,14 +32,14 @@ pipeline {
                         fi
 
                         . $VENV_NAME/bin/activate
-                        echo "📦 Upgrading pip and base tools..."
+                        echo "📦 Upgrading pip and core tools..."
                         $VENV_NAME/bin/pip install --upgrade pip setuptools wheel
 
-                        echo "📚 Installing regression pipeline dependencies..."
+                        echo "📚 Installing compatible dependencies..."
                         $VENV_NAME/bin/pip install --force-reinstall \\
-                            "zenml==0.72.0" \\
-                            "mlflow==2.8.1" \\
-                            "packaging==23.2" \\
+                            "zenml==0.74.0" \\
+                            "mlflow==2.13.2" \\
+                            "packaging==25.0" \\
                             "scikit-learn==1.3.2" \\
                             "pandas==1.5.3" \\
                             "numpy==1.24.3" \\
