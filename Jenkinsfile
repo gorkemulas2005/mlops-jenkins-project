@@ -2,18 +2,26 @@ pipeline {
     agent any
 
     environment {
-        PYTHONPATH = "/usr/local/lib/python3.11/site-packages"
-        VENV_NAME = ".venv_regression"
-        MLFLOW_TRACKING_URI = "http://mlflow_ui:5000"
+        VENV_DIR = ".venv_regression"
+        PYTHON = "python3"
     }
-
-    options { timestamps() }
 
     stages {
 
+        stage('Pre-clean') {
+            steps {
+                echo " Cleaning previous environments and residual ZenML modules..."
+                sh '''
+                    set -e
+                    rm -rf ${VENV_DIR}
+                    find . -type d -name "zenml" -exec rm -rf {} +
+                '''
+            }
+        }
+
         stage('Checkout') {
             steps {
-                echo "📥 Checking out repository..."
+                echo " Checking out repository..."
                 checkout scm
             }
         }
@@ -21,67 +29,76 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 script {
-                    echo "🚀 Setting up Python virtual environment..."
+                    echo " Setting up Python virtual environment..."
                     sh '''
                         set -euo pipefail
-                        if [ ! -d "$VENV_NAME" ]; then
-                            echo "🆕 Creating new venv..."
-                            python3 -m venv $VENV_NAME
-                        else
-                            echo "♻️ Found existing venv at $VENV_NAME — reusing."
-                        fi
 
-                        . $VENV_NAME/bin/activate
-                        echo "📦 Upgrading pip and core tools..."
-                        $VENV_NAME/bin/pip install --upgrade pip setuptools wheel
+                        # Create venv
+                        ${PYTHON} -m venv ${VENV_DIR}
+                        . ${VENV_DIR}/bin/activate
 
-                        echo "📚 Installing compatible dependencies..."
-                        $VENV_NAME/bin/pip install --force-reinstall \\
-                            "zenml==0.74.0" \\
-                            "mlflow==2.13.2" \\
-                            "packaging==24.1" \\
-                            "scikit-learn==1.3.2" \\
-                            "pandas==1.5.3" \\
-                            "numpy==1.24.3" \\
-                            "matplotlib==3.7.2" \\
-                            "joblib==1.3.2"
+                        # Ensure Python path points inside venv
+                        export PYTHONPATH="${VENV_DIR}/lib/python3.11/site-packages"
+
+                        echo " Upgrading pip and base tools..."
+                        ${VENV_DIR}/bin/pip install --upgrade pip setuptools wheel
+
+                        echo " Installing compatible dependencies..."
+                        ${VENV_DIR}/bin/pip install \
+                            zenml==0.91.0 \
+                            mlflow==2.13.2 \
+                            packaging==24.1 \
+                            scikit-learn==1.3.2 \
+                            pandas==1.5.3 \
+                            numpy==1.24.3 \
+                            matplotlib==3.7.2 \
+                            joblib==1.3.2
                     '''
                 }
+            }
+        }
+
+        stage('Verify Dependencies') {
+            steps {
+                echo " Verifying ZenML and MLflow versions..."
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    python -c "import zenml, mlflow; print(f' ZenML {zenml.__version__} | MLflow {mlflow.__version__}')"
+                '''
             }
         }
 
         stage('Run Regression Pipeline') {
             steps {
-                script {
-                    echo "🏋️‍♂️ Running regression training pipeline..."
-                    sh '''
-                        set -e
-                        . $VENV_NAME/bin/activate
-                        python pipelines/regression_pipeline.py
-                    '''
-                }
+                echo " Running regression pipeline..."
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    export PYTHONPATH="${VENV_DIR}/lib/python3.11/site-packages"
+                    python run_fatih_terim.py
+                '''
             }
         }
 
         stage('Track in MLflow') {
             steps {
-                script {
-                    echo "📊 Tracking results in MLflow..."
-                    sh '''
-                        . $VENV_NAME/bin/activate
-                        echo "MLflow UI: $MLFLOW_TRACKING_URI"
-                    '''
-                }
+                echo " Logging results to MLflow..."
+                sh '''
+                    . ${VENV_DIR}/bin/activate
+                    export MLFLOW_TRACKING_URI="file:./mlruns"
+                    echo " MLflow tracking directory set to ./mlruns"
+                '''
             }
         }
     }
 
     post {
-        success { echo "✅ Pipeline completed successfully!" }
-        failure { echo "❌ Pipeline failed — check console logs." }
-        always {
-            echo "📦 Archiving MLflow artifacts..."
-            archiveArtifacts artifacts: '**/mlruns/**', allowEmptyArchive: true
+        success {
+            echo " Pipeline completed successfully!"
+            archiveArtifacts artifacts: 'mlruns/**/*', fingerprint: true
+        }
+        failure {
+            echo " Pipeline failed — check console logs."
+            archiveArtifacts artifacts: 'mlruns/**/*', allowEmptyArchive: true
         }
     }
 }
