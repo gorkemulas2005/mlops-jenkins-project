@@ -2,90 +2,62 @@ pipeline {
     agent any
 
     environment {
+        PYTHON_VER = "3.11"
         VENV_DIR = ".venv_regression"
-        PYTHON = "python3"
+        GITHUB_REPO = "https://github.com/gorkemulas2005/mlops-jenkins-project.git"
+        BRANCH = "main"
+        CREDENTIALS_ID = "github-token"
     }
 
     stages {
 
-        stage('Pre-clean') {
-            steps {
-                echo " Cleaning previous environments and residual ZenML modules..."
-                sh '''
-                    set -e
-                    rm -rf ${VENV_DIR}
-                    find . -type d -name "zenml" -exec rm -rf {} +
-                '''
-            }
-        }
-
         stage('Checkout') {
             steps {
                 echo " Checking out repository..."
-                checkout scm
+                git branch: "${BRANCH}", url: "${GITHUB_REPO}", credentialsId: "${CREDENTIALS_ID}"
             }
         }
 
         stage('Setup Python Environment') {
             steps {
-                script {
-                    echo " Setting up Python virtual environment..."
-                    sh '''
-                        set -euo pipefail
-
-                        # Create venv
-                        ${PYTHON} -m venv ${VENV_DIR}
-                        . ${VENV_DIR}/bin/activate
-
-                        # Ensure Python path points inside venv
-                        export PYTHONPATH="${VENV_DIR}/lib/python3.11/site-packages"
-
-                        echo " Upgrading pip and base tools..."
-                        ${VENV_DIR}/bin/pip install --upgrade pip setuptools wheel
-
-                        echo " Installing compatible dependencies..."
-                        ${VENV_DIR}/bin/pip install \
-                            zenml==0.91.0 \
-                            mlflow==2.13.2 \
-                            packaging==24.1 \
-                            scikit-learn==1.3.2 \
-                            pandas==1.5.3 \
-                            numpy==1.24.3 \
-                            matplotlib==3.7.2 \
-                            joblib==1.3.2
-                    '''
-                }
-            }
-        }
-
-        stage('Verify Dependencies') {
-            steps {
-                echo " Verifying ZenML and MLflow versions..."
+                echo " Setting up Python environment..."
                 sh '''
-                    . ${VENV_DIR}/bin/activate
-                    python -c "import zenml, mlflow; print(f' ZenML {zenml.__version__} | MLflow {mlflow.__version__}')"
+                set -e
+                if [ -d ${VENV_DIR} ]; then
+                    rm -rf ${VENV_DIR}
+                fi
+
+                python3 -m venv ${VENV_DIR}
+                . ${VENV_DIR}/bin/activate
+
+                pip install --upgrade pip setuptools wheel
+                pip install zenml==0.91.0 mlflow==2.13.2 scikit-learn==1.3.2 pandas==1.5.3 numpy==1.24.3 matplotlib==3.7.2 joblib==1.3.2 packaging==24.1
                 '''
             }
         }
 
         stage('Run Regression Pipeline') {
             steps {
-                echo " Running regression pipeline..."
+                echo " Running MLflow Regression Pipeline..."
                 sh '''
-                    . ${VENV_DIR}/bin/activate
-                    export PYTHONPATH="${VENV_DIR}/lib/python3.11/site-packages"
-                    python run_fatih_terim.py
+                . ${VENV_DIR}/bin/activate
+                python run_fatih_terim.py || python3 run_fatih_terim.py
                 '''
             }
         }
 
         stage('Track in MLflow') {
             steps {
-                echo " Logging results to MLflow..."
+                echo " Verifying MLflow logs..."
                 sh '''
-                    . ${VENV_DIR}/bin/activate
-                    export MLFLOW_TRACKING_URI="file:./mlruns"
-                    echo " MLflow tracking directory set to ./mlruns"
+                . ${VENV_DIR}/bin/activate
+                if [ -d "mlruns" ]; then
+                    echo " MLflow tracking successful! Artifacts logged:"
+                    ls -R mlruns | head -30
+                else
+                    echo " No mlruns directory found — check MLflow tracking configuration."
+                    exit 1
+                fi
                 '''
             }
         }
@@ -93,12 +65,10 @@ pipeline {
 
     post {
         success {
-            echo " Pipeline completed successfully!"
-            archiveArtifacts artifacts: 'mlruns/**/*', fingerprint: true
+            echo " Pipeline completed successfully — Regression and MLflow tracking OK!"
         }
         failure {
-            echo " Pipeline failed — check console logs."
-            archiveArtifacts artifacts: 'mlruns/**/*', allowEmptyArchive: true
+            echo " Pipeline failed — Check console logs."
         }
     }
 }
