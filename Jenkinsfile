@@ -17,13 +17,14 @@ pipeline {
             }
         }
 
-        stage('Setup Python (venv)') {
+        stage('Setup Python Environment') {
             steps {
                 script {
                     sh '''
                         set -euo pipefail
-                        echo ">>> Using bash to setup venv"
+                        echo "🚀 Setting up Python virtual environment..."
 
+                        # Venv oluştur / yeniden kullan
                         if [ ! -d "$VENV_DIR" ]; then
                             python3 -m venv "$VENV_DIR"
                         else
@@ -31,11 +32,14 @@ pipeline {
                         fi
 
                         . "$VENV_DIR/bin/activate"
+
+                        echo "📦 Upgrading pip and core tools..."
                         "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel
 
-                        echo "Installing pinned dependencies..."
+                        echo "📚 Installing regression pipeline dependencies..."
                         "$VENV_DIR/bin/pip" install --force-reinstall \
                             zenml==0.74.0 \
+                            packaging==24.0 \
                             mlflow==2.9.2 \
                             scikit-learn==1.3.2 \
                             pandas==1.5.3 \
@@ -43,6 +47,7 @@ pipeline {
                             matplotlib==3.7.2 \
                             joblib==1.3.2
 
+                        echo "✅ Python Environment Ready!"
                         "$VENV_DIR/bin/python" --version
                         "$VENV_DIR/bin/pip" --version
                     '''
@@ -55,6 +60,7 @@ pipeline {
                 script {
                     sh '''
                         set -euo pipefail
+                        echo "🏋️‍♂️ Running Regression Pipeline..."
                         . "$VENV_DIR/bin/activate"
 
                         export MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
@@ -69,14 +75,14 @@ pipeline {
 
     post {
         always {
-            echo "📦 Archiving artifacts"
+            echo "📦 Archiving MLflow artifacts..."
             archiveArtifacts artifacts: '**/mlruns/**', allowEmptyArchive: true
         }
         success {
-            echo "✅ Pipeline successfully finished!"
+            echo "✅ Pipeline finished successfully!"
         }
         failure {
-            echo "❌ Pipeline failed - check console output"
+            echo "❌ Pipeline failed - check console logs."
         }
     }
 }
