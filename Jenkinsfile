@@ -39,7 +39,7 @@ pipeline {
                         $VENV_NAME/bin/pip install --force-reinstall \\
                             "zenml==0.74.0" \\
                             "mlflow==2.13.2" \\
-                            "packaging==25.0" \\
+                            "packaging==24.1" \\
                             "scikit-learn==1.3.2" \\
                             "pandas==1.5.3" \\
                             "numpy==1.24.3" \\
