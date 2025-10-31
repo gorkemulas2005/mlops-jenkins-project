@@ -24,7 +24,6 @@ pipeline {
                         set -euo pipefail
                         echo "🚀 Setting up Python virtual environment..."
 
-                        # Venv oluştur / yeniden kullan
                         if [ ! -d "$VENV_DIR" ]; then
                             python3 -m venv "$VENV_DIR"
                         else
@@ -38,8 +37,8 @@ pipeline {
 
                         echo "📚 Installing regression pipeline dependencies..."
                         "$VENV_DIR/bin/pip" install --force-reinstall \
+                            packaging==24.1 \
                             zenml==0.74.0 \
-                            packaging==24.0 \
                             mlflow==2.9.2 \
                             scikit-learn==1.3.2 \
                             pandas==1.5.3 \
